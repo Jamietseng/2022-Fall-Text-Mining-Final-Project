@@ -1,0 +1,54 @@
+#import libraries
+from keras_bert import extract_embeddings
+from keras_bert import load_vocabulary
+from keras_bert import Tokenizer
+from sklearn.svm import SVC
+import warnings
+import pandas as pd
+import jieba
+
+#import dataset
+jay = []
+df = pd.read_csv("JayChou_preprocessed.csv", usecols=['lyric_full'])
+df = df.values.tolist()
+
+for lyric in range(len(df)):
+    jay.append(df[lyric])
+
+#tokenized
+jieba.set_dictionary('dict.txt.big')
+jay_tokens = []
+for i in range(len(jay)):
+    jay_token = jieba.cut(jay[i][0])
+    tokens = list(jay_token)
+    jay_tokens.append(tokens)
+
+#remove stopwords
+stop_words = []
+with open(file='stopwords_zh.txt', mode = 'r', encoding = 'utf-8') as f:
+    for line in f.readlines():
+        line = line.replace("\n", "")
+        stop_words.append(line)
+
+for song in range(len(jay_tokens)):
+    jay_tokens[song] = [x for x in jay_tokens[song] if x not in stop_words]
+
+#full lyrics
+jay_lyrics = []
+for i in range(len(jay_tokens)):
+    lyric = ''
+    for j in range(len(jay_tokens[i])):
+        lyric += jay_tokens[i][j]
+    jay_lyrics.append(lyric)
+
+#bert model path
+model_path = 'uncased_L-12_H-768_A-12'
+dict_path = 'uncased_L-12_H-768_A-12/vocab.txt'
+
+#introduce bert model
+bert_token_dict = load_vocabulary(dict_path)
+bert_tokenizer = Tokenizer(bert_token_dict)
+warnings.filterwarnings('ignore')
+
+#extract embeddings
+embeddings = extract_embeddings(model_path, jay_lyrics)
